@@ -1,0 +1,22 @@
+# Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+#
+##################################
+# Providers Block - RPC
+# Create Remote Peering Connection
+##################################
+
+terraform {
+  required_providers {
+    oci = {
+      source = "oracle/oci"
+      configuration_aliases = [
+        {% for region in subscribed_regions %}
+          {% set region_keys = region.split('-') %}
+             oci.{{region_keys[1]}},
+        {% endfor %}
+
+      ]
+    }
+  }
+}

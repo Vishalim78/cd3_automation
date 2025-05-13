@@ -1,0 +1,1 @@
+return ["Create New Resources in OCI (Greenfield Workflow)", "Export Existing Resources from OCI (Non-Greenfield Workflow; Import into excel and tfstate)"]

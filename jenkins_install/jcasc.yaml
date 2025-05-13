@@ -1,0 +1,74 @@
+jenkins:
+  authorizationStrategy: "loggedInUsersCanDoAnything"
+  disableRememberMe: false
+  disabledAdministrativeMonitors:
+  - "jenkins.diagnostics.RootUrlNotSetMonitor"
+  #globalNodeProperties:
+  #  - envVars:
+  #      env:
+  #        - key: "customer_prefix"
+  #          value: ""
+  labelAtoms:
+  - name: "master"
+  markupFormatter: "plainText"
+  mode: NORMAL
+  myViewsTabBar: "standard"
+  noUsageStatistics: true
+  numExecutors: 6
+  primaryView:
+    all:
+      name: "all"
+  projectNamingStrategy: "standard"
+  quietPeriod: 5
+  #remotingSecurity:
+  #  enabled: true
+  scmCheckoutRetryCount: 0
+  securityRealm:
+    local:
+      allowsSignup: false
+      enableCaptcha: false
+  updateCenter:
+    sites:
+    - id: "default"
+      url: "https://updates.jenkins.io/update-center.json"
+  views:
+  - all:
+      name: "all"
+  viewsTabBar: "standard"
+security:
+  apiToken:
+    creationOfLegacyTokenEnabled: false
+    tokenGenerationOnCreationEnabled: false
+    usageStatisticsEnabled: true
+  globalJobDslSecurityConfiguration:
+    useScriptSecurity: false
+  scriptApproval:
+    approvedSignatures:
+      - "method groovy.lang.GroovyObject invokeMethod java.lang.String java.lang.Object"
+      - "new java.io.File java.lang.String"
+      - "staticMethod org.codehaus.groovy.runtime.ResourceGroovyMethods readLines java.io.File"
+      - "method java.io.File listFiles"
+      - "staticMethod groovy.util.Eval me java.lang.String"
+unclassified:
+  buildDiscarders:
+    configuredBuildDiscarders:
+    - "jobBuildDiscarder"
+  buildStepOperation:
+    enabled: false
+  defaultFolderConfiguration:
+    healthMetrics:
+    - worstChildHealthMetric:
+        recursive: true
+  fingerprints:
+    fingerprintCleanupDisabled: false
+    storage: "file"
+  scmGit:
+    createAccountBasedOnEmail: true
+    showEntireCommitSummaryInChanges: false
+    useExistingAccountWithSameEmail: true
+tool:
+  git:
+    installations:
+    - home: "git"
+      name: "Default"
+
