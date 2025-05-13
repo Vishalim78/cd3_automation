@@ -15,7 +15,11 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
+    
+    - name: Install dependencies
+      run: pip install -r cd3_automation_toolkit/requirements.txt
 
     - name: Run setUpOCI script
       run: |
         python cd3_automation_toolkit/setUpOCI.py cd3_automation_toolkit/setUpOCI.properties
+    
