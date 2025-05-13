@@ -16,6 +16,6 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Run CD3 Export Script
+    - name: Run setUpOCI script
       run: |
-        python setUpOCI.py ../../cd3_automation/cd3_automation_toolkit/setUpOCI.properties
+        python cd3_automation_toolkit/setUpOCI.py cd3_automation_toolkit/setUpOCI.properties
