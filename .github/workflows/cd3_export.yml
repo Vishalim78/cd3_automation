@@ -18,5 +18,5 @@ jobs:
 
     - name: Run CD3 Export Script
       run: |
-        cd cd3_automation/cd3_automation_toolkit/user-scripts
+        cd cd3_automation/cd3_automation_toolkit
         python setUpOCI.py ../../cd3_automation/cd3_automation_toolkit/setUpOCI.properties
