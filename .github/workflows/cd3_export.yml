@@ -1,33 +1,22 @@
 name: CD3 Export
 
 on:
-  workflow_dispatch:  # You can also use push, schedule, etc.
+  workflow_dispatch:
 
 jobs:
   export-cd3:
-    runs-on: ubuntu-latest  # Or self-hosted if using custom runners
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repo
+    - name: Checkout Repository
       uses: actions/checkout@v3
 
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: 3.11
+        python-version: '3.11'
 
-    - name: Install Python dependencies
+    - name: Run CD3 Export Script
       run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt  # Optional if your scripts need dependencies
-
-    - name: Run CD3 Export
-      run: |
-        cd oci_tools/cd3_automation_toolkit/user-scripts
-        python setUpOCI.py tenancies/vishal/vishal_setUpOCI.properties
-
-    - name: Upload Terraform Files (Optional)
-      uses: actions/upload-artifact@v3
-      with:
-        name: terraform-files
-        path: tenancies/vishal/terraform_files
+        cd cd3_automation/cd3_automation_toolkit/user-scripts
+        python setUpOCI.py ../../tenancies/vishal/setUpOCI.properties
