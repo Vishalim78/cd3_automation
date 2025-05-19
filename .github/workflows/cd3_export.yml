@@ -1,25 +1,171 @@
-name: CD3 Export
+# This workflow installs the latest version of OCI CLI and configures the OCI CLI configuration file
+# with an API token for the Oracle Cloud (cloud.oracle.com). OCI Resource Manager is used to manage the terraform and tfstate file.
+# this workflow will run `terraform init`, and `terraform plan`. On successful pull request merge `terraform apply` will be executed.
+
 
 on:
-  workflow_dispatch:
+
+  workflow_call:
+    inputs:
+      PROVIDER_NAME:
+        type: string
+      BRANCH_NAME:
+        type: string
+      STACK_NAME:
+        type: string
+      WORKING_DIRECTORY:
+        type: string
+      REPO_URL:
+        type: string
+      TF_VERSION:
+        type: string
+
+    secrets:
+      USER_OCID:
+        required: true
+      FINGERPRINT:
+        required: true
+      COMPARTMENT_OCID:
+        required: true
+      REGION:
+        required: true
+      TENANCY_OCID:
+        required: true
+      PRIVATE_KEY_FILE:
+        required: true
+env:
+
+  # ---------------------------------------------
+  # Source Provider Details
+  # ---------------------------------------------
+
+  PROVIDER_NAME: ${{ inputs.PROVIDER_NAME }}
+  REGION: ${{ inputs.REGION }}
+  BRANCH_NAME: ${{ inputs.BRANCH_NAME }}
+  STACK_NAME: ${{ inputs.STACK_NAME }}
+  WORKING_DIRECTORY: ${{ inputs.WORKING_DIRECTORY }}
+  REPO_URL: ${{ inputs.REPO_URL }}
+  TF_VERSION: ${{ inputs.TF_VERSION }}
+  
+# ---------------------------------------------
+# Permissions
+# ---------------------------------------------
+
+permissions:
+  contents: write
 
 jobs:
-  export-cd3:
+  STACK:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
+      # ---------------------------------------------
+      # Checkout  
+      # ---------------------------------------------
+
+      - name: checkout
+        uses: actions/checkout@v3
+        with:
+          ref: 'dev'
+
+      # ---------------------------------------------
+      # Update tfvars.json file  
+      # ---------------------------------------------
+
+      - name: 'Update tfvars.json file'
+        run: |
+          echo '${{ toJson(github.event.client_payload) }}' > new.json
+          jq -s '.[0] * .[1]' $WORKING_DIRECTORY/tfvars.json new.json > updated.json
+          mv updated.json $WORKING_DIRECTORY/tfvars.json
+      # ---------------------------------------------
+      #  Writing config files
+      # ---------------------------------------------
+
+      - name: 'Writing config files'
+        run: |
+          rm -rf ~/.oci
+          mkdir ~/.oci
+          echo "[DEFAULT]" >> ~/.oci/config
+          echo "user=${{secrets.USER_OCID}}" >> ~/.oci/config
+          echo "fingerprint=${{secrets.FINGERPRINT}}" >> ~/.oci/config
+          echo "compartment_ocid=${{secrets.COMPARTMENT_OCID}}" >> ~/.oci/config
+          echo "region=${{secrets.REGION}}" >> ~/.oci/config
+          echo "tenancy=${{secrets.TENANCY_OCID}}" >> ~/.oci/config
+          echo "key_file=~/.oci/key.pem" >> ~/.oci/config
+          echo "${{secrets.PRIVATE_KEY_FILE}}" >> ~/.oci/key.pem
+          echo "~/.oci/config file "
+          cat ~/.oci/config
+          echo " ~/.oci/key.pem file"
+          ls -lta ~/.oci
+          ls -lta ~
+
+      # ---------------------------------------------
+      #  Install OCI CLI
+      # ---------------------------------------------
+
+      - name: 'Install OCI CLI'
+        run: |
+          curl -L -O https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
+          chmod +x install.sh
+          ./install.sh --accept-all-defaults
+          #exec -l $SHELL
+          echo " Fixing file permissions and testing oci"
+          /home/runner/bin/oci setup repair-file-permissions --file ~/.oci/config
+          /home/runner/bin/oci setup repair-file-permissions --file ~/.oci/key.pem
+          echo "# ---------------------------------------------"
+          echo "#  Authenticating to OCI"
+          echo "# ---------------------------------------------"
+          /home/runner/bin/oci os ns get
+          if [ $? -ne 0 ]; then
+            echo "Authentication failed"
+            exit 1
+          else
+            echo "Authentication is successful"
+          fi
+name: Generate CD3 File
+
+on:
+  push:
+    branches: [ main, dev ]  # or your preferred branch
+
+jobs:
+  generate-cd3:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
       uses: actions/checkout@v3
 
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
-    
-    - name: Install dependencies
-      run: pip install -r cd3_automation_toolkit/requirements.txt
+        python-version: '3.9'
 
-    - name: Run setUpOCI script
+    - name: Install dependencies
       run: |
-        python cd3_automation_toolkit/setUpOCI.py cd3_automation_toolkit/setUpOCI.properties
-    
+        pip install --upgrade pip
+        pip install -r cd3_automation_toolkit/requirements.txt
+
+    - name: Configure OCI CLI
+      run: |
+        mkdir -p ~/.oci
+        echo "[DEFAULT]" >> ~/.oci/config
+        echo "user=${{ secrets.USER_OCID }}" >> ~/.oci/config
+        echo "fingerprint=${{ secrets.FINGERPRINT }}" >> ~/.oci/config
+        echo "region=${{ secrets.REGION }}" >> ~/.oci/config
+        echo "tenancy=${{ secrets.TENANCY_OCID }}" >> ~/.oci/config
+        echo "key_file=~/.oci/key.pem" >> ~/.oci/config
+        echo "${{ secrets.PRIVATE_KEY_FILE }}" > ~/.oci/key.pem
+        chmod 600 ~/.oci/key.pem
+
+    - name: Run CD3 Automation
+      run: |
+        python3 cd3_automation_toolkit/setUpOCI.py cd3_automation_toolkit/setUpOCI.properties
+
+    - name: Upload CD3 Excel Output
+      uses: actions/upload-artifact@v3
+      with:
+        name: cd3-output
+        path: /cd3user/tenancies/**/CD3-*.xlsx  # adjust path based on your setup
+
+      
