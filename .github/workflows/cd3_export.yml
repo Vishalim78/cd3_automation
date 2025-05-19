@@ -2,7 +2,6 @@
 # with an API token for the Oracle Cloud (cloud.oracle.com). OCI Resource Manager is used to manage the terraform and tfstate file.
 # this workflow will run `terraform init`, and `terraform plan`. On successful pull request merge `terraform apply` will be executed.
 
-
 on:
 
   workflow_call:
@@ -33,6 +32,7 @@ on:
         required: true
       PRIVATE_KEY_FILE:
         required: true
+
 env:
 
   # ---------------------------------------------
@@ -77,6 +77,7 @@ jobs:
           echo '${{ toJson(github.event.client_payload) }}' > new.json
           jq -s '.[0] * .[1]' $WORKING_DIRECTORY/tfvars.json new.json > updated.json
           mv updated.json $WORKING_DIRECTORY/tfvars.json
+
       # ---------------------------------------------
       #  Writing config files
       # ---------------------------------------------
@@ -93,6 +94,7 @@ jobs:
           echo "tenancy=${{secrets.TENANCY_OCID}}" >> ~/.oci/config
           echo "key_file=~/.oci/key.pem" >> ~/.oci/config
           echo "${{secrets.PRIVATE_KEY_FILE}}" >> ~/.oci/key.pem
+          chmod 600 ~/.oci/key.pem
           echo "~/.oci/config file "
           cat ~/.oci/config
           echo " ~/.oci/key.pem file"
@@ -108,7 +110,7 @@ jobs:
           curl -L -O https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh
           chmod +x install.sh
           ./install.sh --accept-all-defaults
-          #exec -l $SHELL
+          echo "/home/runner/bin" >> $GITHUB_PATH
           echo " Fixing file permissions and testing oci"
           /home/runner/bin/oci setup repair-file-permissions --file ~/.oci/config
           /home/runner/bin/oci setup repair-file-permissions --file ~/.oci/key.pem
@@ -122,7 +124,31 @@ jobs:
           else
             echo "Authentication is successful"
           fi
-      
+
+      # # ---------------------------------------------
+      # # Install Terraform
+      # # ---------------------------------------------
+      # - name: Setup Terraform
+      #   uses: hashicorp/setup-terraform@v3
+      #   with:
+      #     terraform_version: ${{ inputs.TF_VERSION }}
+
+      # # ---------------------------------------------
+      # # Terraform Init & Plan
+      # # ---------------------------------------------
+      # - name: Terraform Init
+      #   run: terraform -chdir=${{ inputs.WORKING_DIRECTORY }} init
+
+      # - name: Terraform Plan
+      #   run: terraform -chdir=${{ inputs.WORKING_DIRECTORY }} plan
+
+      # # ---------------------------------------------
+      # # Terraform Apply (only on push to main)
+      # # ---------------------------------------------
+      # - name: Terraform Apply
+      #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      #   run: terraform -chdir=${{ inputs.WORKING_DIRECTORY }} apply -auto-approve
+
       # ---------------------------------------------
       # Install Python and CD3 dependencies
       # ---------------------------------------------
@@ -147,4 +173,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: cd3-output
-          path: /cd3user/tenancies/vishal/CD3-*.xlsx  # Update path if needed
+          path: /cd3user/tenancies/output/CD3-*.xlsx  # Update path if needed
