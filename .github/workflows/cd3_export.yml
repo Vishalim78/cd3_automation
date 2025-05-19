@@ -40,7 +40,7 @@ env:
   # ---------------------------------------------
 
   PROVIDER_NAME: ${{ inputs.PROVIDER_NAME }}
-  REGION: ${{ inputs.REGION }}
+  # REGION is provided as a secret, not as an input, so do not set it here
   BRANCH_NAME: ${{ inputs.BRANCH_NAME }}
   STACK_NAME: ${{ inputs.STACK_NAME }}
   WORKING_DIRECTORY: ${{ inputs.WORKING_DIRECTORY }}
@@ -122,50 +122,29 @@ jobs:
           else
             echo "Authentication is successful"
           fi
-name: Generate CD3 File
-
-on:
-  push:
-    branches: [ main, dev ]  # or your preferred branch
-
-jobs:
-  generate-cd3:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-
-    - name: Install dependencies
-      run: |
-        pip install --upgrade pip
-        pip install -r cd3_automation_toolkit/requirements.txt
-
-    - name: Configure OCI CLI
-      run: |
-        mkdir -p ~/.oci
-        echo "[DEFAULT]" >> ~/.oci/config
-        echo "user=${{ secrets.USER_OCID }}" >> ~/.oci/config
-        echo "fingerprint=${{ secrets.FINGERPRINT }}" >> ~/.oci/config
-        echo "region=${{ secrets.REGION }}" >> ~/.oci/config
-        echo "tenancy=${{ secrets.TENANCY_OCID }}" >> ~/.oci/config
-        echo "key_file=~/.oci/key.pem" >> ~/.oci/config
-        echo "${{ secrets.PRIVATE_KEY_FILE }}" > ~/.oci/key.pem
-        chmod 600 ~/.oci/key.pem
-
-    - name: Run CD3 Automation
-      run: |
-        python3 cd3_automation_toolkit/setUpOCI.py cd3_automation_toolkit/setUpOCI.properties
-
-    - name: Upload CD3 Excel Output
-      uses: actions/upload-artifact@v3
-      with:
-        name: cd3-output
-        path: /cd3user/tenancies/**/CD3-*.xlsx  # adjust path based on your setup
-
       
+      # ---------------------------------------------
+      # Install Python and CD3 dependencies
+      # ---------------------------------------------
+      - name: 'Set up Python'
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: 'Install CD3 dependencies'
+        run: |
+          pip install --upgrade pip
+          pip install -r cd3_automation_toolkit/requirements.txt
+
+      # ---------------------------------------------
+      # Run CD3 extract
+      # ---------------------------------------------
+      - name: 'Run CD3 Automation'
+        run: |
+          python3 cd3_automation_toolkit/setUpOCI.py cd3_automation_toolkit/setUpOCI.properties
+
+      - name: 'Upload CD3 Excel Output'
+        uses: actions/upload-artifact@v3
+        with:
+          name: cd3-output
+          path: /cd3user/tenancies/vishal/CD3-*.xlsx  # Update path if needed
